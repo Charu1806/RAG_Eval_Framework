@@ -63,6 +63,7 @@ def run_item(rag_chain, judge, embeddings, item: dict) -> dict:
         "difficulty": item["difficulty"],
         "question": item["question"],
         "answer": answer,
+        "retrieved_contexts": retrieved_contexts,
         "retrieved_chunk_ids": sorted(extract_chunk_ids(retrieved_contexts)),
         "golden_source_chunk_ids": item["source_chunk_ids"],
         **result.as_dict(),
