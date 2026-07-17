@@ -56,6 +56,32 @@ Useful flags: `offline_eval.py --limit 5` for a quick smoke test,
 `offline_eval.py` / `failure_taxonomy.py`, `failure_taxonomy.py
 --no-llm-labels` to cluster without any API calls.
 
+## Libraries & tools
+
+What's actually wired into the code below, why it's there, and what else
+was considered. Two entries in `requirements.txt` (`pandas`, `deepeval`)
+are **not** currently imported anywhere in `src/eval/` — listed honestly as
+such rather than pretending they're load-bearing.
+
+| Tool | Type | Used for | Alternatives |
+|---|---|---|---|
+| **RAGAS** (`ragas`) | RAG eval framework | 4 of the 5 rubric dimensions in `judge.py` — `Faithfulness`, `LLMContextPrecisionWithoutReference`, `LLMContextRecall`, `ResponseRelevancy`. Each metric internally prompts an LLM (see below) and returns a continuous 0–1 score, bucketed onto the 0–3 rubric scale | **DeepEval** (installed, unused — see below), **TruLens**, **LangSmith Evaluators**, or hand-rolled LLM-as-judge prompts for every dimension instead of RAGAS's pre-built ones (more control, a lot more prompt-writing) |
+| **DeepEval** (`deepeval`) | RAG eval framework | Nothing yet — it's in `requirements.txt` from the original scope ("ragas, deepeval, standard data libs") but RAGAS's metric set mapped more directly onto the PRD's 5 rubric dimensions, so it was never wired in. Kept installed as a documented, ready-to-try alternative to RAGAS (pytest-style API, overlapping metric set) without adding a new dependency later | RAGAS (what's actually used) |
+| **Mistral** (`langchain-mistralai`, model `mistral-large-latest`) | LLM judge, default | First provider tried in `judge.get_judge()`'s fallback chain. Chosen as default because it's the same provider `rag_pipeline` already uses to *generate* answers — one fewer API key to manage. (Using the same model family to both generate and judge is a known bias risk, which is exactly why there's a fallback chain to a different family rather than only ever using Mistral) | **OpenAI**, **Anthropic** (both below), **Google Gemini**, or a **local judge via Ollama** (the PRD's own suggested mitigation for judge cost/latency at scale — not implemented; would need a `langchain-ollama` wrapper added to `_build_chat_model()`) |
+| **OpenAI** (`langchain-openai`, model `gpt-4o-mini`) | LLM judge, fallback #2 | Used only if Mistral's key is missing or its probe call fails. Different model family than the system under test, so it avoids the same-model-bias risk noted above; cheap | Any other OpenAI chat model (`gpt-4o`, etc.) via the same wrapper |
+| **Anthropic** (`langchain-anthropic`, model `claude-3-5-sonnet-latest`) | LLM judge, fallback #3 | Last resort if both Mistral and OpenAI are unavailable. Strongest reasoning of the three, also the priciest, which is why it's last in the chain rather than first | Any other Claude model via the same wrapper |
+| **LangChain core** (`langchain-core`) | Abstraction layer | Common `BaseChatModel` / `Embeddings` interfaces so `judge.py` can treat Mistral/OpenAI/Anthropic/HuggingFace interchangeably, and so RAGAS's `LangchainLLMWrapper` / `LangchainEmbeddingsWrapper` can adapt any of them into RAGAS's own metric interface | Call each provider's raw SDK directly (`openai`, `anthropic`, `mistralai` packages) — less abstraction and boilerplate per provider, but no shared interface, and RAGAS would need its own per-provider glue instead of one wrapper |
+| **HuggingFace embeddings** (`langchain-huggingface` + `sentence-transformers`, model `all-MiniLM-L6-v2`) | Local embedding model | Same model `rag_pipeline` uses for retrieval, reused by RAGAS's `ResponseRelevancy` metric (which embeds a synthetic question generated from the answer and compares it back to the original question). Runs locally, no API key or network call at eval time (aside from the one-time model download) | OpenAI/Cohere embeddings API (paid, network-dependent, often higher quality), or a larger local sentence-transformers model (e.g. `all-mpnet-base-v2` — slower, more accurate) |
+| **scikit-learn** (`scikit-learn`) | ML utilities | Two unrelated uses: `cohen_kappa_score` in `calibration.py` (standard Cohen's kappa implementation), and `TfidfVectorizer` + `AgglomerativeClustering` in `failure_taxonomy.py` (bottom-up clustering with no fixed number of clusters) | For kappa: hand-roll the formula (it's simple) or use `statsmodels`. For clustering: **HDBSCAN** (also density-based, no fixed k, needs a separate `hdbscan` package) or call `scipy.cluster.hierarchy` directly (same underlying algorithm as `AgglomerativeClustering`, lower-level API) |
+| **NumPy** (`numpy`) | Array math | TF-IDF cluster-centroid math in `failure_taxonomy.py`'s `top_terms()` | None realistic at this scale — it's the standard |
+| **pandas** (`pandas`) | *(not currently used)* | Nothing yet. Listed in `requirements.txt` per the original "standard data libs" scope; `calibration.py`'s CSV read/write turned out simple enough to use the stdlib `csv` module instead of a DataFrame. Left installed since it's a near-certain dependency once Part 2/3 (traffic simulation, online eval) or ad-hoc analysis notebooks get built | stdlib `csv` (what's actually used) |
+
+Separately — `rag_pipeline/` (the system *under test*, not part of this
+repo's own stack) uses **Chroma** (`langchain-chroma`, `chromadb`) as its
+vector store and **Mistral** (`mistral-small-latest`) as its generator
+model; its own `config/requirements.txt` also lists **FAISS** as an
+alternative vector store it doesn't currently use.
+
 ## Architecture
 
 ```mermaid
