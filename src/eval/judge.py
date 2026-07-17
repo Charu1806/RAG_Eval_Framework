@@ -129,18 +129,24 @@ def get_judge(preferred_provider: Optional[str] = None) -> Judge:
     raise RuntimeError(f"No judge provider available. Tried: {errors}")
 
 
-def get_embeddings():
-    """Same embedding model as the RAG pipeline (all-MiniLM-L6-v2), needed by
-    RAGAS's answer_relevancy metric. Runs locally, no API key required."""
+def get_raw_embeddings():
+    """Same embedding model as the RAG pipeline (all-MiniLM-L6-v2). Runs
+    locally, no API key required. Returns the plain langchain embeddings
+    object (not RAGAS-wrapped) so other modules (e.g. failure_taxonomy.py's
+    clustering) can reuse it without a RAGAS dependency."""
     from langchain_huggingface import HuggingFaceEmbeddings
 
-    return LangchainEmbeddingsWrapper(
-        HuggingFaceEmbeddings(
-            model_name="all-MiniLM-L6-v2",
-            model_kwargs={"device": "cpu"},
-            encode_kwargs={"normalize_embeddings": True},
-        )
+    return HuggingFaceEmbeddings(
+        model_name="all-MiniLM-L6-v2",
+        model_kwargs={"device": "cpu"},
+        encode_kwargs={"normalize_embeddings": True},
     )
+
+
+def get_embeddings():
+    """RAGAS-wrapped version of get_raw_embeddings(), for use with RAGAS
+    metrics like answer_relevancy."""
+    return LangchainEmbeddingsWrapper(get_raw_embeddings())
 
 
 # ── Deterministic retrieval-correctness check ────────────────────────────────
