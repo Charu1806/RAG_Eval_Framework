@@ -1,0 +1,525 @@
+[
+  {
+    "id": "G001",
+    "category": "HR",
+    "question": "How many unused annual leave days can I carry over into the next year, and what happens to leave beyond that amount?",
+    "invariants": [
+      "Maximum of 5 unused annual leave days may be carried over to the next calendar year",
+      "Leave in excess of 5 days at year-end is forfeited",
+      "Excess leave is not forfeited if the employee has an active approved leave request that could not be fulfilled due to business requirements"
+    ],
+    "difficulty": "easy",
+    "source_chunk_ids": ["HR-001"],
+    "notes": "Single-chunk factual lookup from the Annual Leave Policy."
+  },
+  {
+    "id": "G002",
+    "category": "HR",
+    "question": "How many days per week can an employee work from home, and how many days must they be in the office?",
+    "invariants": [
+      "Employees may work remotely up to 3 days per week",
+      "A minimum of 2 days per week must be spent in the designated office location"
+    ],
+    "difficulty": "easy",
+    "source_chunk_ids": ["HR-002"],
+    "notes": "Single-chunk factual lookup from the Work From Home Policy."
+  },
+  {
+    "id": "G003",
+    "category": "HR",
+    "question": "What is AcmeTech's maternity leave pay structure across the full 26-week entitlement?",
+    "invariants": [
+      "Total maternity leave entitlement is up to 26 weeks",
+      "The first 16 weeks are paid at 100% of base salary",
+      "Weeks 17 through 26 are paid at 60% of base salary"
+    ],
+    "difficulty": "medium",
+    "source_chunk_ids": ["HR-003"],
+    "notes": "Requires combining two pay-rate facts from the same chunk, not just one number."
+  },
+  {
+    "id": "G004",
+    "category": "HR",
+    "question": "How does AcmeTech's paid paternity leave entitlement compare to maternity leave in total paid duration?",
+    "invariants": [
+      "Paternity leave is 4 weeks fully paid, with up to 4 additional weeks of unpaid leave available",
+      "Maternity leave is up to 26 weeks total (16 weeks at 100% pay plus 10 weeks at 60% pay)",
+      "Paternity leave's paid duration (4 weeks) is substantially shorter than maternity leave's paid duration (26 weeks)"
+    ],
+    "difficulty": "hard",
+    "source_chunk_ids": ["HR-003", "HR-004"],
+    "notes": "Requires synthesizing entitlement details from both the Maternity and Paternity Leave Policy chunks."
+  },
+  {
+    "id": "G005",
+    "category": "HR",
+    "question": "If an employee receives an Unsatisfactory performance rating, what happens next in terms of both the review process and progressive discipline?",
+    "invariants": [
+      "The employee is placed on a formal Performance Improvement Plan (PIP) within 15 business days of the review",
+      "The PIP has a review timeline of 60 to 90 days",
+      "Under the Disciplinary Action Policy, PIP is Step 3 of progressive discipline and failing to meet PIP targets can lead to Step 4, termination"
+    ],
+    "difficulty": "hard",
+    "source_chunk_ids": ["HR-007", "HR-011"],
+    "notes": "Requires linking the Performance Review Process PIP trigger to the Disciplinary Action Policy's progressive discipline steps."
+  },
+  {
+    "id": "G006",
+    "category": "HR",
+    "question": "How long is the standard probationary period, and how long is it for Director-level roles and above?",
+    "invariants": [
+      "Standard probationary period is 90 days from the start date",
+      "For Director-level roles and above, the probationary period is 180 days",
+      "The period may be extended by an additional 30 days by mutual agreement between manager and HR"
+    ],
+    "difficulty": "medium",
+    "source_chunk_ids": ["HR-014"],
+    "notes": "Single-chunk lookup but requires two distinct duration facts plus the extension clause."
+  },
+  {
+    "id": "G007",
+    "category": "HR",
+    "question": "What is the referral bonus for successfully referring a candidate hired as a Senior Engineer, and how is it paid out?",
+    "invariants": [
+      "Referral bonus for technical roles at Engineer, Senior Engineer, and Product Manager level is $4,000",
+      "Bonus is paid in two installments: 50% upon the referred candidate's hire date",
+      "The remaining 50% is paid upon the referred candidate's successful completion of the 90-day probationary period"
+    ],
+    "difficulty": "medium",
+    "source_chunk_ids": ["HR-015"],
+    "notes": "Requires picking the correct bonus tier (technical vs non-technical vs Director+) from the Referral Policy."
+  },
+  {
+    "id": "G008",
+    "category": "Finance",
+    "question": "What is the receipt requirement for expense reimbursement, and what can be submitted instead for small cash expenses?",
+    "invariants": [
+      "Receipts are required for all expenses over $25",
+      "For cash expenses under $25, a written description and business justification are acceptable in lieu of a receipt"
+    ],
+    "difficulty": "easy",
+    "source_chunk_ids": ["FIN-001"],
+    "notes": "Single-chunk lookup from the Expense Reimbursement Policy."
+  },
+  {
+    "id": "G009",
+    "category": "Finance",
+    "question": "For a Level 6 manager rated 'Exceeds Expectations,' what merit increase percentage and bonus target range would apply?",
+    "invariants": [
+      "Merit increase for an 'Exceeds Expectations' rating is 3-5% (Salary Structure Guide)",
+      "Level 6-7 (Manager and Director) bonus target is 15-20% of base salary (Bonus Calculation Framework)",
+      "The Individual Performance Multiplier for 'Exceeds Expectations' is 1.10"
+    ],
+    "difficulty": "hard",
+    "source_chunk_ids": ["FIN-004", "FIN-005"],
+    "notes": "Requires combining the merit increase table (Salary Structure Guide) with the bonus target and multiplier tables (Bonus Calculation Framework)."
+  },
+  {
+    "id": "G010",
+    "category": "Finance",
+    "question": "What level of approval is required for a $75,000 purchase, and would it need Board or Audit Committee sign-off?",
+    "invariants": [
+      "A $75,000 purchase falls in Tier 4 (purchases above $50,000), requiring CFO approval",
+      "Board or Audit Committee approval is only required for amounts above $250,000, so it does not apply to a $75,000 purchase"
+    ],
+    "difficulty": "medium",
+    "source_chunk_ids": ["FIN-008"],
+    "notes": "Tests whether the model correctly applies the tier boundary and does not over-escalate to Board approval."
+  },
+  {
+    "id": "G011",
+    "category": "Finance",
+    "question": "How is an employee's actual annual bonus payout calculated?",
+    "invariants": [
+      "Formula is Target Bonus x Company Performance Multiplier x Individual Performance Multiplier",
+      "The Company Performance Multiplier ranges from 0 to 1.5",
+      "The Individual Performance Multiplier is derived from the employee's annual performance rating"
+    ],
+    "difficulty": "medium",
+    "source_chunk_ids": ["FIN-005"],
+    "notes": "Single-chunk lookup but requires the full formula, not just one component."
+  },
+  {
+    "id": "G012",
+    "category": "Finance",
+    "question": "Who is eligible for a corporate credit card, and how soon after joining an eligible role can a new employee receive one?",
+    "invariants": [
+      "Cards are issued to employees at Senior Manager level and above, employees requiring frequent business travel, or others approved by the CFO based on documented business need",
+      "New employees in eligible roles must complete a minimum of 90 days of service before a card is issued"
+    ],
+    "difficulty": "medium",
+    "source_chunk_ids": ["FIN-002"],
+    "notes": "Single-chunk lookup from the Corporate Credit Card Policy."
+  },
+  {
+    "id": "G013",
+    "category": "Finance",
+    "question": "What are AcmeTech's standard payment terms with vendors, and on what day does Accounts Payable run payments?",
+    "invariants": [
+      "Standard payment terms are Net 30 from the date of invoice receipt",
+      "Accounts Payable generates a weekly payment run every Thursday"
+    ],
+    "difficulty": "easy",
+    "source_chunk_ids": ["FIN-010"],
+    "notes": "Single-chunk lookup from the Vendor Payment Process."
+  },
+  {
+    "id": "G014",
+    "category": "Finance",
+    "question": "What is AcmeTech's standard RSU vesting schedule?",
+    "invariants": [
+      "Standard RSU grants vest over a 4-year period with a 1-year cliff"
+    ],
+    "difficulty": "easy",
+    "source_chunk_ids": ["FIN-012"],
+    "notes": "Single-chunk lookup from the Equity Compensation Guide."
+  },
+  {
+    "id": "G015",
+    "category": "Engineering",
+    "question": "What health checks must every Kubernetes service implement before going to production, and what does each one verify?",
+    "invariants": [
+      "Services must implement both liveness and readiness probes",
+      "Readiness probes should validate the service can handle traffic, including database connectivity and downstream service availability",
+      "Liveness probes should verify the process has not entered an unrecoverable state"
+    ],
+    "difficulty": "medium",
+    "source_chunk_ids": ["ENG-001"],
+    "notes": "Single-chunk lookup but requires distinguishing what each probe type checks."
+  },
+  {
+    "id": "G016",
+    "category": "Engineering",
+    "question": "What is the incident severity classification for a complete platform outage, and how quickly must it be responded to?",
+    "invariants": [
+      "A complete platform outage or data loss affecting all customers is classified as SEV1 (Critical)",
+      "SEV1 requires a response within 5 minutes"
+    ],
+    "difficulty": "easy",
+    "source_chunk_ids": ["ENG-004"],
+    "notes": "Single-chunk lookup from the Incident Management Process severity table."
+  },
+  {
+    "id": "G017",
+    "category": "Engineering",
+    "question": "For a high-risk production deployment that causes a SEV1 incident, what approval was required before the deployment, and what review is required afterward?",
+    "invariants": [
+      "High-risk deployments require additional approval from the Engineering Director beyond the standard team lead / release engineer approval",
+      "SEV1 incidents require a blameless post-incident review within 5 business days"
+    ],
+    "difficulty": "hard",
+    "source_chunk_ids": ["ENG-008", "ENG-004"],
+    "notes": "Requires connecting the CI/CD Deployment Process's high-risk approval rule with the Incident Management Process's post-incident review requirement."
+  },
+  {
+    "id": "G018",
+    "category": "Engineering",
+    "question": "What pattern must all synchronous microservice calls implement, and under what conditions does it open and attempt recovery?",
+    "invariants": [
+      "All synchronous service calls must implement the circuit breaker pattern via the service mesh",
+      "Circuit breakers open after 3 consecutive failures within a 30-second window",
+      "Circuit breakers attempt recovery after 60 seconds"
+    ],
+    "difficulty": "medium",
+    "source_chunk_ids": ["ENG-003"],
+    "notes": "Single-chunk lookup from Microservice Communication Standards."
+  },
+  {
+    "id": "G019",
+    "category": "Engineering",
+    "question": "What is the Recovery Time Objective for Tier 1 databases, and how are Tier 1 databases backed up?",
+    "invariants": [
+      "Tier 1 RTO (Recovery Time Objective) is 15 minutes",
+      "Tier 1 databases use continuous WAL streaming replication to a standby replica in a separate availability zone",
+      "Tier 1 databases also get a full snapshot backup every 6 hours to encrypted S3 storage",
+      "Point-in-time recovery is available for up to 35 days"
+    ],
+    "difficulty": "medium",
+    "source_chunk_ids": ["ENG-006"],
+    "notes": "Single-chunk lookup requiring multiple backup/recovery facts from the Database Backup Procedures."
+  },
+  {
+    "id": "G020",
+    "category": "Engineering",
+    "question": "What are the expiration times for AcmeTech's customer-facing JWT access tokens and refresh tokens?",
+    "invariants": [
+      "JWT access tokens have a 15-minute expiration",
+      "Refresh tokens have a 30-day expiration"
+    ],
+    "difficulty": "easy",
+    "source_chunk_ids": ["ENG-007"],
+    "notes": "Single-chunk lookup from the Authentication Architecture document."
+  },
+  {
+    "id": "G021",
+    "category": "Engineering",
+    "question": "How quickly must a High severity (CVSS 7.0-8.9) vulnerability be remediated?",
+    "invariants": [
+      "High severity vulnerabilities (CVSS 7.0-8.9) must be remediated within 7 days"
+    ],
+    "difficulty": "easy",
+    "source_chunk_ids": ["ENG-014"],
+    "notes": "Single-chunk lookup from Security Vulnerability Management."
+  },
+  {
+    "id": "G022",
+    "category": "Support",
+    "question": "What should a customer do if they do not receive a password reset email?",
+    "invariants": [
+      "Verify the correct email address was entered",
+      "If using a custom email domain, confirm AcmeTech's notification email is not blocked by the organization's email security filters",
+      "If the organization uses SSO, the customer cannot reset their AcmeTech password directly and must contact their IT administrator to reset credentials via the corporate identity provider"
+    ],
+    "difficulty": "medium",
+    "source_chunk_ids": ["SUP-001"],
+    "notes": "Single-chunk lookup but has three distinct branches of guidance that must all be captured."
+  },
+  {
+    "id": "G023",
+    "category": "Support",
+    "question": "How do I configure Single Sign-On using SAML 2.0 in AcmeTech?",
+    "invariants": [
+      "Navigate to Account Settings > Security > Single Sign-On and select SAML 2.0",
+      "Download the AcmeTech Service Provider metadata and upload it to the identity provider",
+      "Enter the identity provider's metadata URL or upload its metadata XML file in AcmeTech",
+      "Configure attribute mapping for email address, first name, and last name",
+      "Test the SSO connection before enabling it"
+    ],
+    "difficulty": "medium",
+    "source_chunk_ids": ["SUP-009"],
+    "notes": "Single-chunk lookup but a multi-step procedural answer."
+  },
+  {
+    "id": "G024",
+    "category": "Support",
+    "question": "If a customer's account is locked, how does the process differ between a standard failed-login lockout and a lockout triggered by a security review?",
+    "invariants": [
+      "A standard failed-login lockout lasts 15 minutes and self-service password reset is available during the lockout to regain access immediately",
+      "A lockout triggered by a security review may remain in place until cleared by AcmeTech's Support team",
+      "For a security-review lockout, the customer must submit a support ticket with subject line 'Locked Account – Security Review'"
+    ],
+    "difficulty": "hard",
+    "source_chunk_ids": ["SUP-001", "SUP-002"],
+    "notes": "Requires combining the standard lockout duration from the Password Reset Guide with the security-review lockout process from the Account Recovery Guide."
+  },
+  {
+    "id": "G025",
+    "category": "Support",
+    "question": "What is the default API rate limit for a Professional plan customer, and what happens when the limit is exceeded?",
+    "invariants": [
+      "Professional Plan default rate limit is 1,000 requests per minute",
+      "Exceeding the limit returns an HTTP 429 Too Many Requests response",
+      "The 429 response includes a Retry-After header indicating how many seconds to wait before retrying"
+    ],
+    "difficulty": "medium",
+    "source_chunk_ids": ["SUP-005"],
+    "notes": "Single-chunk lookup from the API Rate Limits Guide."
+  },
+  {
+    "id": "G026",
+    "category": "Support",
+    "question": "If a customer on an annual billing cycle upgrades their subscription mid-cycle, how are they billed?",
+    "invariants": [
+      "The customer is charged a prorated amount for the remainder of the current annual term at the time of the upgrade",
+      "Upgraded plan features are available immediately upon confirmation"
+    ],
+    "difficulty": "medium",
+    "source_chunk_ids": ["SUP-003"],
+    "notes": "Single-chunk lookup; tests that the model picks the annual-cycle branch, not the monthly-cycle branch."
+  },
+  {
+    "id": "G027",
+    "category": "Support",
+    "question": "What is the allowed range for session inactivity timeout that an organization administrator can configure?",
+    "invariants": [
+      "Session inactivity timeout can be set between 15 minutes and 24 hours"
+    ],
+    "difficulty": "easy",
+    "source_chunk_ids": ["SUP-007"],
+    "notes": "Single-chunk lookup from the Security Settings Guide."
+  },
+  {
+    "id": "G028",
+    "category": "Support",
+    "question": "How long is a user invitation link valid before it expires?",
+    "invariants": [
+      "Invitation links expire after 72 hours"
+    ],
+    "difficulty": "easy",
+    "source_chunk_ids": ["SUP-010"],
+    "notes": "Single-chunk lookup from the User Management Guide."
+  },
+  {
+    "id": "G029",
+    "category": "Product",
+    "question": "What are AcmeTech's three strategic product themes for FY2026?",
+    "invariants": [
+      "Theme 1: Enterprise Readiness",
+      "Theme 2: Intelligence and Automation",
+      "Theme 3: Platform Extensibility"
+    ],
+    "difficulty": "easy",
+    "source_chunk_ids": ["PM-001"],
+    "notes": "Single-chunk lookup from the Product Roadmap."
+  },
+  {
+    "id": "G030",
+    "category": "Product",
+    "question": "How does AcmeTech calculate an OKR score, and what does a score of 0.7 mean?",
+    "invariants": [
+      "OKR scores are assessed at the end of each quarter on a 0.0 to 1.0 scale",
+      "A score of 0.7 is considered a successful outcome",
+      "Consistently scoring 1.0 may indicate the objective was not sufficiently ambitious"
+    ],
+    "difficulty": "medium",
+    "source_chunk_ids": ["PM-002"],
+    "notes": "Single-chunk lookup from the OKR Planning Framework."
+  },
+  {
+    "id": "G031",
+    "category": "Product",
+    "question": "What are the four dimensions AcmeTech uses to score features for prioritization, and what weight does each carry?",
+    "invariants": [
+      "Customer Value: 30%",
+      "Strategic Alignment: 25%",
+      "Revenue Impact: 25%",
+      "Effort and Confidence: 20%"
+    ],
+    "difficulty": "medium",
+    "source_chunk_ids": ["PM-003"],
+    "notes": "Single-chunk lookup from the Feature Prioritization Framework."
+  },
+  {
+    "id": "G032",
+    "category": "Product",
+    "question": "Which FY2026 company-level OKR objective is the AI document summarization feature tied to, and which roadmap theme does it fall under?",
+    "invariants": [
+      "It is tied to Objective 2: 'Deliver AI-powered experiences that create measurable user value' in the OKR Planning Framework",
+      "It falls under Theme 2: 'Intelligence and Automation' in the Product Roadmap"
+    ],
+    "difficulty": "hard",
+    "source_chunk_ids": ["PM-001", "PM-002"],
+    "notes": "Requires cross-referencing the same feature (AI document summarization) as it appears in both the roadmap themes and the OKR objectives."
+  },
+  {
+    "id": "G033",
+    "category": "Product",
+    "question": "What statistical confidence level and minimum duration are required for a product experiment at AcmeTech?",
+    "invariants": [
+      "Target sample size must achieve 80% statistical power at a 95% confidence level",
+      "Minimum experiment duration is 7 days, regardless of how quickly the sample size target is reached"
+    ],
+    "difficulty": "medium",
+    "source_chunk_ids": ["PM-006"],
+    "notes": "Single-chunk lookup from the Experimentation Guidelines."
+  },
+  {
+    "id": "G034",
+    "category": "Product",
+    "question": "What is AcmeTech's North Star Metric, and how is a 'team' defined for the purposes of that metric?",
+    "invariants": [
+      "The North Star Metric is Weekly Active Teams",
+      "A 'team' is an organization with at least 3 distinct users interacting with core platform features (document creation, search, or collaboration) within a 7-day period"
+    ],
+    "difficulty": "medium",
+    "source_chunk_ids": ["PM-004"],
+    "notes": "Single-chunk lookup from the North Star Metrics Framework."
+  },
+  {
+    "id": "G035",
+    "category": "Product",
+    "question": "What user research finding motivated the AI Search feature's requirement for source citation, and which specific feature capability addresses it?",
+    "invariants": [
+      "User Research Key Finding 3 found that AI feature adoption requires trust building, and users were concerned about AI-generated content lacking clear attribution",
+      "The AI Search PRD includes the user story: users want to see clear attribution showing which documents contributed to the AI summary, to verify the source and trust the result"
+    ],
+    "difficulty": "hard",
+    "source_chunk_ids": ["PM-005", "PM-009"],
+    "notes": "Requires linking the User Research Findings Report's trust-building finding to the specific user story it produced in the AI Search PRD."
+  },
+  {
+    "id": "G036",
+    "category": "Employee",
+    "question": "What are Sarah Mitchell's current projects and performance rating?",
+    "invariants": [
+      "Current Projects: AcmeTech Platform v4.0 Roadmap, North Star Metrics Initiative, Q3 Feature Prioritization",
+      "Performance Rating: Exceeds Expectations"
+    ],
+    "difficulty": "easy",
+    "source_chunk_ids": ["EMP-001"],
+    "notes": "Single-chunk lookup from the employee directory."
+  },
+  {
+    "id": "G037",
+    "category": "Employee",
+    "question": "Who is the Engineering Director, and how many engineers do they manage?",
+    "invariants": [
+      "Priya Nair is the Engineering Director",
+      "She manages four engineering teams totaling 28 engineers"
+    ],
+    "difficulty": "easy",
+    "source_chunk_ids": ["EMP-011"],
+    "notes": "Single-chunk lookup from the employee directory."
+  },
+  {
+    "id": "G038",
+    "category": "Employee",
+    "question": "Who manages James Fernandez, and who does that manager report to?",
+    "invariants": [
+      "James Fernandez's manager is Priya Nair (Engineering Director)",
+      "Priya Nair reports to Anand Patel (CTO)"
+    ],
+    "difficulty": "hard",
+    "source_chunk_ids": ["EMP-002", "EMP-011"],
+    "notes": "Requires chaining the management relationship across two separate employee profile chunks."
+  },
+  {
+    "id": "G039",
+    "category": "Employee",
+    "question": "What was the measurable impact of Liam Burke's CI/CD pipeline modernization work?",
+    "invariants": [
+      "Reduced average build times from 18 minutes to 4 minutes",
+      "Eliminated 90% of manual deployment steps"
+    ],
+    "difficulty": "medium",
+    "source_chunk_ids": ["EMP-014"],
+    "notes": "Single-chunk lookup from the employee directory."
+  },
+  {
+    "id": "G040",
+    "category": "Employee",
+    "question": "Who does David Okonkwo report to, and what is his role at AcmeTech?",
+    "invariants": [
+      "David Okonkwo reports to Anand Patel (CTO)",
+      "He is VP of Product in the Product department"
+    ],
+    "difficulty": "easy",
+    "source_chunk_ids": ["EMP-020"],
+    "notes": "Single-chunk lookup; his title appears in narrative text rather than a labeled field."
+  },
+  {
+    "id": "G041",
+    "category": "Employee",
+    "question": "What is Carlos Vasquez's career goal, and what HR certification does he hold?",
+    "invariants": [
+      "Carlos is targeting an HR Director role with a focus on total rewards and workforce analytics",
+      "He holds a SHRM-SCP certification"
+    ],
+    "difficulty": "medium",
+    "source_chunk_ids": ["EMP-008"],
+    "notes": "Single-chunk lookup from the employee directory."
+  },
+  {
+    "id": "G042",
+    "category": "Employee",
+    "question": "Marcus Johnson and David Okonkwo are both in the Product department — how do their roles differ in scope?",
+    "invariants": [
+      "David Okonkwo is VP of Product, manages a team of twelve product managers, and leads the company's overall product strategy",
+      "Marcus Johnson is an individual product manager (targeting Senior/Group Product Manager) who leads product strategy specifically for AcmeTech's enterprise tier",
+      "Marcus Johnson reports to David Okonkwo"
+    ],
+    "difficulty": "hard",
+    "source_chunk_ids": ["EMP-016", "EMP-020"],
+    "notes": "Requires comparing scope and reporting line details across two separate employee profile chunks."
+  }
+]
