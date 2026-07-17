@@ -1,0 +1,3 @@
+[submodule "rag_pipeline"]
+	path = rag_pipeline
+	url = https://github.com/Charu1806/RAG_LangChain_Demo.git

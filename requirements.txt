@@ -1,0 +1,5 @@
+ragas
+deepeval
+pandas
+numpy
+scikit-learn
