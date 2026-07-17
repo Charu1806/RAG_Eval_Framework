@@ -3,3 +3,8 @@ deepeval
 pandas
 numpy
 scikit-learn
+langchain-core
+langchain-mistralai
+langchain-openai
+langchain-anthropic
+langchain-huggingface
