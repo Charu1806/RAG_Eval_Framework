@@ -1,5 +1,7 @@
 # RAG Evaluation Framework
 
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Charu1806/RAG_Eval_Framework/blob/main/notebooks/offline_eval_colab.ipynb)
+
 A companion evaluation framework for
 [RAG_LangChain_Demo](https://github.com/Charu1806/RAG_LangChain_Demo) — the
 AcmeTech RAG demo (LangChain + ChromaDB + Mistral).
@@ -55,6 +57,11 @@ Useful flags: `offline_eval.py --limit 5` for a quick smoke test,
 `--judge-provider {mistral,openai,anthropic}` to force a specific judge on
 `offline_eval.py` / `failure_taxonomy.py`, `failure_taxonomy.py
 --no-llm-labels` to cluster without any API calls.
+
+**Or run it in Colab** — [`notebooks/offline_eval_colab.ipynb`](notebooks/offline_eval_colab.ipynb)
+(badge above) drives the exact same commands cell-by-cell, plus inline charts and a
+one-item-at-a-time widget for calibration hand-labeling, matching the PRD's stated Part 1
+environment. Every cell notes its CLI equivalent, so nothing here is Colab-only.
 
 ## Libraries & tools
 
@@ -320,6 +327,8 @@ src/eval/
   failure_taxonomy.py       bottom-up clustering of failures
   generate_report.py        combines everything into offline_eval_v1.md + README
 reports/                    generated eval artifacts, committed once a real run produces them
+notebooks/
+  offline_eval_colab.ipynb   Colab-first walkthrough of the same pipeline, with charts
 ```
 
 ## Results

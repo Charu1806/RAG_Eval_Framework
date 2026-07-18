@@ -8,3 +8,5 @@ langchain-mistralai
 langchain-openai
 langchain-anthropic
 langchain-huggingface
+matplotlib
+ipywidgets
