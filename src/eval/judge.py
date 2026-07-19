@@ -37,6 +37,7 @@ never silently swapped without you knowing.
 import json
 import os
 import re
+import time
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -51,6 +52,39 @@ from ragas.metrics import (
 )
 
 from src.eval.rubric import RUBRIC, Dimension, Quadrant, RubricScore, bucket_continuous_score, classify_quadrant
+
+# ── Rate-limit handling ──────────────────────────────────────────────────────
+# offline_eval.py paces its own generation calls, but a single item also fires
+# 4 RAGAS metric calls + 1 custom judge call, all unpaced -- and when the
+# judge is Mistral (the default), those share the same free-tier 1 req/sec
+# limit as the generator. langchain-mistralai's own built-in retry isn't
+# always enough to absorb a 429, so every judge-facing call below is paced
+# and retried at this level too.
+
+JUDGE_CALL_PACE_SECONDS = 1.5  # matches rag_pipeline's own Mistral free-tier pacing
+
+
+def _is_rate_limit_error(exc: Exception) -> bool:
+    text = str(exc).lower()
+    return "429" in text or "rate limit" in text or "rate_limited" in text
+
+
+def _call_with_backoff(fn, *, max_attempts: int = 4, base_delay: float = 5.0):
+    """Call fn() with exponential backoff on rate-limit-shaped errors. Any
+    other exception (auth failure, malformed response, etc.) is re-raised
+    immediately -- only rate limits are worth waiting out."""
+    for attempt in range(1, max_attempts + 1):
+        try:
+            result = fn()
+            time.sleep(JUDGE_CALL_PACE_SECONDS)  # pace even on success, to avoid tripping the next call
+            return result
+        except Exception as e:  # noqa: BLE001 -- inspected immediately below, not swallowed
+            if not _is_rate_limit_error(e) or attempt == max_attempts:
+                raise
+            delay = base_delay * attempt
+            print(f"[judge] rate limited (attempt {attempt}/{max_attempts}), waiting {delay:.0f}s before retry")
+            time.sleep(delay)
+
 
 # ── Judge provider selection ─────────────────────────────────────────────────
 
@@ -223,7 +257,7 @@ def judge_citation_and_correctness(judge: Judge, question: str, invariants: list
         answer=answer,
         citation_levels=citation_levels,
     )
-    raw = judge.llm.invoke(prompt).content
+    raw = _call_with_backoff(lambda: judge.llm.invoke(prompt).content)
     return _parse_judge_json(raw)
 
 
@@ -272,9 +306,9 @@ def score_item(
         reference=reference,
     )
 
-    faithfulness = Faithfulness(llm=judge.ragas_llm).single_turn_score(sample)
-    context_precision = LLMContextPrecisionWithoutReference(llm=judge.ragas_llm).single_turn_score(sample)
-    context_recall = LLMContextRecall(llm=judge.ragas_llm).single_turn_score(sample)
+    faithfulness = _call_with_backoff(lambda: Faithfulness(llm=judge.ragas_llm).single_turn_score(sample))
+    context_precision = _call_with_backoff(lambda: LLMContextPrecisionWithoutReference(llm=judge.ragas_llm).single_turn_score(sample))
+    context_recall = _call_with_backoff(lambda: LLMContextRecall(llm=judge.ragas_llm).single_turn_score(sample))
     # strictness=1: ResponseRelevancy's default (3) asks the LLM for 3 separate
     # completions in one batched call so it can average them for a more robust
     # score. langchain-mistralai==0.2.12's _combine_llm_outputs crashes
@@ -283,7 +317,9 @@ def score_item(
     # response now includes a nested token-usage-detail dict that its naive
     # `+=` doesn't expect. n=1 has nothing to merge, so it never hits that
     # code path. Confirmed by direct repro against the installed package.
-    answer_relevancy = ResponseRelevancy(llm=judge.ragas_llm, embeddings=embeddings, strictness=1).single_turn_score(sample)
+    answer_relevancy = _call_with_backoff(
+        lambda: ResponseRelevancy(llm=judge.ragas_llm, embeddings=embeddings, strictness=1).single_turn_score(sample)
+    )
 
     custom = judge_citation_and_correctness(judge, question, invariants, retrieved_contexts, answer)
 
