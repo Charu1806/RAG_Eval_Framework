@@ -35,6 +35,7 @@ never silently swapped without you knowing.
 """
 
 import json
+import math
 import os
 import re
 import time
@@ -261,6 +262,40 @@ def judge_citation_and_correctness(judge: Judge, question: str, invariants: list
     return _parse_judge_json(raw)
 
 
+def _score_answer_relevancy(judge: Judge, embeddings, sample, max_nan_attempts: int = 2) -> float:
+    """
+    ResponseRelevancy's default strictness=3 asks the LLM for 3 separate
+    completions in one batched call so it can average them for a more robust
+    score. langchain-mistralai==0.2.12's _combine_llm_outputs crashes
+    (TypeError: unsupported operand type(s) for +=: 'dict' and 'dict') when
+    merging usage stats across more than one completion, because Mistral's
+    response now includes a nested token-usage-detail dict its naive `+=`
+    doesn't expect -- confirmed by direct repro against the installed
+    package. That bug is specific to langchain-mistralai, so strictness is
+    only dropped to 1 when Mistral is the judge; other providers keep the
+    default 3, which also makes the next issue less likely to occur:
+
+    RAGAS returns NaN (rather than 0.0) when *every* generated reverse-
+    question comes back unparseable (an LLM response-parsing hiccup, not a
+    property of the answer itself) -- with strictness=1 there's only one
+    attempt, so a single malformed generation directly causes NaN with
+    nothing to average against. Retrying the whole scoring call a couple of
+    times handles the rare case where it still happens; a persistent NaN
+    falls back to 0.0, the same score RAGAS itself gives an all-noncommittal
+    answer.
+    """
+    strictness = 1 if judge.provider == "mistral" else 3
+    for attempt in range(1, max_nan_attempts + 1):
+        score = _call_with_backoff(
+            lambda: ResponseRelevancy(llm=judge.ragas_llm, embeddings=embeddings, strictness=strictness).single_turn_score(sample)
+        )
+        if not (isinstance(score, float) and math.isnan(score)):
+            return score
+        print(f"[judge] answer_relevancy returned NaN (attempt {attempt}/{max_nan_attempts}), retrying")
+    print("[judge] answer_relevancy still NaN after retries, scoring as 0.0")
+    return 0.0
+
+
 # ── Full item scoring ────────────────────────────────────────────────────────
 
 @dataclass
@@ -309,17 +344,7 @@ def score_item(
     faithfulness = _call_with_backoff(lambda: Faithfulness(llm=judge.ragas_llm).single_turn_score(sample))
     context_precision = _call_with_backoff(lambda: LLMContextPrecisionWithoutReference(llm=judge.ragas_llm).single_turn_score(sample))
     context_recall = _call_with_backoff(lambda: LLMContextRecall(llm=judge.ragas_llm).single_turn_score(sample))
-    # strictness=1: ResponseRelevancy's default (3) asks the LLM for 3 separate
-    # completions in one batched call so it can average them for a more robust
-    # score. langchain-mistralai==0.2.12's _combine_llm_outputs crashes
-    # (TypeError: unsupported operand type(s) for +=: 'dict' and 'dict') when
-    # merging usage stats across more than one completion, because Mistral's
-    # response now includes a nested token-usage-detail dict that its naive
-    # `+=` doesn't expect. n=1 has nothing to merge, so it never hits that
-    # code path. Confirmed by direct repro against the installed package.
-    answer_relevancy = _call_with_backoff(
-        lambda: ResponseRelevancy(llm=judge.ragas_llm, embeddings=embeddings, strictness=1).single_turn_score(sample)
-    )
+    answer_relevancy = _score_answer_relevancy(judge, embeddings, sample)
 
     custom = judge_citation_and_correctness(judge, question, invariants, retrieved_contexts, answer)
 
