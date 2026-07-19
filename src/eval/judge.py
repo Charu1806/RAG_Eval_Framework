@@ -275,7 +275,15 @@ def score_item(
     faithfulness = Faithfulness(llm=judge.ragas_llm).single_turn_score(sample)
     context_precision = LLMContextPrecisionWithoutReference(llm=judge.ragas_llm).single_turn_score(sample)
     context_recall = LLMContextRecall(llm=judge.ragas_llm).single_turn_score(sample)
-    answer_relevancy = ResponseRelevancy(llm=judge.ragas_llm, embeddings=embeddings).single_turn_score(sample)
+    # strictness=1: ResponseRelevancy's default (3) asks the LLM for 3 separate
+    # completions in one batched call so it can average them for a more robust
+    # score. langchain-mistralai==0.2.12's _combine_llm_outputs crashes
+    # (TypeError: unsupported operand type(s) for +=: 'dict' and 'dict') when
+    # merging usage stats across more than one completion, because Mistral's
+    # response now includes a nested token-usage-detail dict that its naive
+    # `+=` doesn't expect. n=1 has nothing to merge, so it never hits that
+    # code path. Confirmed by direct repro against the installed package.
+    answer_relevancy = ResponseRelevancy(llm=judge.ragas_llm, embeddings=embeddings, strictness=1).single_turn_score(sample)
 
     custom = judge_citation_and_correctness(judge, question, invariants, retrieved_contexts, answer)
 
