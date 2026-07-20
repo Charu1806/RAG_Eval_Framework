@@ -1,0 +1,94 @@
+{
+  "n_labeled": 18,
+  "kappa": {
+    "faithfulness": 0.3414634146341463,
+    "context_precision": 0.0,
+    "context_recall": 0.6538461538461537,
+    "answer_relevancy": 0.0,
+    "citation_accuracy": 0.47058823529411764,
+    "retrieval_correct": 1.0,
+    "answer_correct": 0.7692307692307692
+  },
+  "top_disagreements": [
+    {
+      "id": "G035",
+      "question": "What user research finding motivated the AI Search feature's requirement for source citation, and which specific feature capability addresses it?",
+      "total_gap": 7,
+      "per_dimension_gap": {
+        "faithfulness": 0,
+        "context_precision": 2,
+        "context_recall": 1,
+        "answer_relevancy": 0,
+        "citation_accuracy": 1
+      },
+      "human_answer_correct": true,
+      "judge_answer_correct": false,
+      "judge_answer_correct_reasoning": "The answer does not include the specific user research finding that AI feature adoption requires trust building and that users were concerned about AI-generated content lacking clear attribution. It also fails to mention the user story from the AI Search PRD that explicitly states users want to see clear attribution to verify the source and trust the result.",
+      "human_notes": "SHIPPED LUCK candidate: golden needs PM-005 + PM-009, but only PM-009 was retrieved (PM-005 missing). Answer still substantively covers both invariants -- PM-009 itself references \"user research finding 3\" so the claim is a reasonable synthesis, not pure fabrication, but the required PM-005 citation is missing entirely. Good candidate for the PRD-requested shipped-luck example."
+    },
+    {
+      "id": "G022",
+      "question": "What should a customer do if they do not receive a password reset email?",
+      "total_gap": 4,
+      "per_dimension_gap": {
+        "faithfulness": 0,
+        "context_precision": 2,
+        "context_recall": 0,
+        "answer_relevancy": 0,
+        "citation_accuracy": 2
+      },
+      "human_answer_correct": false,
+      "judge_answer_correct": false,
+      "judge_answer_correct_reasoning": "The answer does not include the fact about contacting the IT administrator if the organization uses SSO, which is a required fact.",
+      "human_notes": "Missing the SSO invariant entirely, even though SUP-001 (retrieved) contains it -- doom_loop, matches automated judge."
+    },
+    {
+      "id": "G006",
+      "question": "How long is the standard probationary period, and how long is it for Director-level roles and above?",
+      "total_gap": 3,
+      "per_dimension_gap": {
+        "faithfulness": 0,
+        "context_precision": 2,
+        "context_recall": 0,
+        "answer_relevancy": 1,
+        "citation_accuracy": 0
+      },
+      "human_answer_correct": false,
+      "judge_answer_correct": false,
+      "judge_answer_correct_reasoning": "The answer does not mention that the probationary period may be extended by an additional 30 days by mutual agreement between manager and HR, which is a required fact.",
+      "human_notes": "Missing the 30-day mutual-agreement extension invariant -- doom_loop."
+    },
+    {
+      "id": "G039",
+      "question": "What was the measurable impact of Liam Burke's CI/CD pipeline modernization work?",
+      "total_gap": 3,
+      "per_dimension_gap": {
+        "faithfulness": 1,
+        "context_precision": 2,
+        "context_recall": 0,
+        "answer_relevancy": 0,
+        "citation_accuracy": 0
+      },
+      "human_answer_correct": true,
+      "judge_answer_correct": true,
+      "judge_answer_correct_reasoning": "The answer includes both required facts: the reduction of average build times from 18 minutes to 4 minutes and the elimination of 90% of manual deployment steps.",
+      "human_notes": ""
+    },
+    {
+      "id": "G010",
+      "question": "What level of approval is required for a $75,000 purchase, and would it need Board or Audit Committee sign-off?",
+      "total_gap": 3,
+      "per_dimension_gap": {
+        "faithfulness": 0,
+        "context_precision": 2,
+        "context_recall": 0,
+        "answer_relevancy": 1,
+        "citation_accuracy": 0
+      },
+      "human_answer_correct": true,
+      "judge_answer_correct": true,
+      "judge_answer_correct_reasoning": "The answer correctly states that a $75,000 purchase falls under Tier 4, requiring CFO approval, and that Board or Audit Committee approval is not required since the amount is below $250,000. All required facts are included and accurately represented.",
+      "human_notes": "DISAGREEMENT: automated judge scored this doom_loop, but the answer explicitly covers both invariants (Tier 4/CFO approval, correctly states Board approval not required under $250k). Worth investigating why the judge marked it incorrect."
+    }
+  ]
+}

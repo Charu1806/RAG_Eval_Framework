@@ -309,29 +309,6 @@ exist, so the report can be regenerated after any single stage.
 | `render_failure_taxonomy_section(taxonomy)` | function | Ranked failure-cluster table (or "not run yet" / "no failures" note) |
 | `render_report(offline_eval, calibration, taxonomy)` | function | Assembles all sections into the full markdown report |
 | `render_readme_summary(offline_eval)` | function | The one-paragraph summary written into README's Results section |
-| `update_readme_results(offline_eval, readme_path)` | function | Replaces everything after the `## Results` heading in `README.md` with the fresh summary |
-| `main()` | CLI | No arguments — reads the standard `reports/*.json` paths, writes `offline_eval_v1.md`, updates `README.md` |
+| `update_readme_results(offline_eval, readme_path)` | function | Replaces everything after the `## Results
 
----
-
-## Structure
-
-```
-rag_pipeline/              submodule — RAG_LangChain_Demo (read-only from here)
-data/golden_dataset/       hand-built Q&A golden dataset (golden_v1.json)
-src/eval/
-  rubric.py                 5-dimension scoring rubric + 2x2 classification
-  judge.py                  RAGAS + custom LLM-as-judge, swappable provider
-  offline_eval.py           runs the golden dataset through rag_pipeline, scores it
-  calibration.py            blind hand-label workflow vs. judge (Cohen's kappa)
-  failure_taxonomy.py       bottom-up clustering of failures
-  generate_report.py        combines everything into offline_eval_v1.md + README
-reports/                    generated eval artifacts, committed once a real run produces them
-notebooks/
-  offline_eval_colab.ipynb   Colab-first walkthrough of the same pipeline, with charts
-```
-
-## Results
-
-_To be filled in once the Part 1 offline evaluation has run — see
-`reports/offline_eval_v1.md`._
+Part 1 offline evaluation run on 2026-07-20 (42 golden items, judge: openai/gpt-4o-mini): overall rubric average **2.80 / 3.0**. Quadrant split -- true_quality: 35, shipped_luck: 1, doom_loop: 5, honest_failure: 1. Full breakdown: [reports/offline_eval_v1.md](reports/offline_eval_v1.md).
