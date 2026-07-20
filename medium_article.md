@@ -6,17 +6,25 @@
 
 ## The problem this solves
 
-I built a RAG system a while back — [RAG_LangChain_Demo](https://github.com/Charu1806/RAG_LangChain_Demo), a LangChain + ChromaDB + Mistral pipeline answering employee questions over a synthetic company knowledge base. It worked. I asked it a handful of questions, the answers looked right, I moved on.
+A couple of weeks ago I was at an Atlassian AI event; a few days after that, an Emergent AI event. Different rooms, different speakers, but the same question kept coming up in both: *how do you actually know if the answer your AI just gave you is correct?* Everyone circled the same word without quite defining it — **evals**.
+
+That gap is what this article is for. I decided to build a practical, working guide to evals — a prototype project, not a slide deck — specifically so students and anyone newer to this could see what the word actually means in practice rather than as a buzzword. (Thanks to Faiz for the nudge to write this up properly instead of leaving it as a private experiment.)
+
+The project itself is a continuation of earlier work — [RAG_LangChain_Demo](https://github.com/Charu1806/RAG_LangChain_Demo), a LangChain + ChromaDB + Mistral pipeline answering employee questions over a synthetic company knowledge base. It worked. I asked it a handful of questions, the answers looked right, I moved on.
 
 That's the part nobody should be proud of. "I asked it a few things and it looked fine" isn't evaluation — it's vibes. It can't tell you *which* questions it gets wrong, *why*, or whether a change you made (a new embedding model, a retrieval tweak) actually helped or just moved the failures somewhere else you didn't happen to look.
 
-So I built a second, standalone repo — [RAG_Eval_Framework](https://github.com/Charu1806/RAG_Eval_Framework) — whose only job is to measure the first one. This article walks through what "evals" actually means, what I built, and what the real results said, including the parts that didn't flatter the system.
+So, as this prototype, I built a second, standalone repo — [RAG_Eval_Framework](https://github.com/Charu1806/RAG_Eval_Framework) — whose only job is to measure the first one. This article walks through what "evals" actually means, what I built, and what the real results said, including the parts that didn't flatter the system.
 
 ---
 
 ## 1. What is an "eval," anyway?
 
-"Eval" gets used loosely. In practice it splits into three distinct things, and conflating them is where most teams go wrong:
+"Eval" gets used loosely. In practice it splits into three distinct things, and conflating them is where most teams go wrong. One line each, before the detail:
+
+- **Offline eval** — a fixed test set, scored before you ship.
+- **Online eval** — real production traffic, scored continuously after you ship.
+- **A/B test** — two live versions, compared head-to-head, to see which one is actually better.
 
 ![Offline eval, online eval, and A/B test compared side by side](article_images/0_eval_types_overview.png)
 
@@ -105,6 +113,8 @@ Each question goes through the actual retriever and generator, then gets scored 
 
 I hand-labeled 18 of the 42 items myself — blind to what the judge scored, specifically to avoid anchoring on its answers — then compared. This is the step most eval pipelines skip, and it's the one that actually tells you whether the numbers above are trustworthy:
 
+![Calibration workflow: offline_eval_v1.json to stratified template to blind CSV to hand-labeling to compare, branching into Cohen's kappa and top disagreements](article_images/5_calibration_flow.png)
+
 ![Calibration kappa chart: Retrieval Correct 1.00, Answer Correct 0.77, Context Recall 0.65, Citation Accuracy 0.47, Faithfulness 0.34, Answer Relevancy 0.00, Context Precision 0.00](article_images/3_kappa_chart.png)
 
 The good news: the two booleans that actually drive the quadrant classification above — retrieval-correct and answer-correct — showed strong-to-perfect agreement with my own read. The classification you're trusting most is the one that held up best.
@@ -114,6 +124,8 @@ The finding worth not burying: **`context_precision` and `answer_relevancy` both
 ### Step 4 — Cluster the failures, bottom-up
 
 No predefined failure categories — the 6 failed items get clustered by what they actually have in common (via TF-IDF similarity over the question + the judge's own reasoning text — plain semantic embeddings were tried first and empirically performed worse at this scale, so TF-IDF won on evidence, not by default), and only afterward does an LLM name each cluster:
+
+![Failure taxonomy workflow: offline_eval_v1.json to get_failed_items to TF-IDF vectorize to AgglomerativeClustering to clusters ranked by size, then LLM naming or TF-IDF fallback](article_images/6_failure_taxonomy_flow.png)
 
 ![Failure taxonomy: Missing required factual details (4 items — G006, G022, G033, G042), Incomplete or inaccurate information (1 — G004), Lack of specific supporting details (1 — G035)](article_images/4_failure_taxonomy.png)
 
@@ -134,5 +146,32 @@ Three things I'd tell someone starting this from scratch:
 **Calibrate before you trust — and calibrate more than the headline number.** The kappa summary alone would have told me "the judge and I mostly disagree on precision and relevancy." Looking at the actual per-item gaps told me something more useful and more specific: the judge is systematically lenient on one dimension, in one consistent direction, in a way I can now name and correct for. A kappa score without the disagreement detail behind it is just a smaller vibe.
 
 **The system that scores your system needs its own eval.** It's tempting to treat the judge as ground truth once it's wired up. It isn't. It's a second model, with its own blind spots, and the only way to know where those blind spots are is to put a real independent human judgment next to it and look — closely — at exactly where the two disagree, not just by how much.
+
+---
+
+## FAQ
+
+**What's the role of Product vs. Engineering vs. QA here?**
+Product owns what "correct" means for the domain — writing the golden dataset's required facts, and deciding which failure category actually matters to the business (a citation-formatting miss is not the same severity as a wrong dollar figure). Engineering builds and maintains the harness — the pipeline, the judge, the scoring code — and is responsible for wiring evals into the release process so they run automatically, not manually before a demo. QA's role shifts rather than disappears: with deterministic software, QA writes test cases with one correct output. Here, QA's contribution is sourcing the hard, adversarial, edge-case questions that go *into* the golden dataset — the "break my bot" instinct — rather than writing pass/fail scripts against a single expected string.
+
+**Is this just "QAing the AI"?**
+Close, but the core assumption breaks. Traditional QA checks "does the output exactly match the expected value" — deterministic, one right answer. An LLM can phrase a correct answer a dozen different ways, so this framework scores against *invariants* (required facts) instead of a fixed string, and grades on a 0–3 rubric across five dimensions instead of a single pass/fail. It's evaluation for a system that's right in a range, not QA for a system that's right in a point.
+
+**How do you actually build a golden dataset?**
+The way this one was built: pull real questions spanning every category the system serves (here, all six knowledge-base categories), write the *required facts* an answer must contain rather than one canonical phrasing, deliberately include some questions that need synthesis across multiple source documents (that's where retrieval quietly drops half an answer), and pin the exact source chunk ID(s) each question depends on — that's what makes retrieval-correctness a checkable fact later, not a guess.
+
+**Is "online eval" the same thing as "the loop"?**
+No — related, but not the same. Online eval is one stage: continuously scoring live traffic as it comes in. "The loop" (or "flywheel") is the larger cycle that online eval feeds into: failures surface in production → get triaged → get added back into the golden dataset → the system gets a deliberate fix → gets re-measured. This project's own PRD calls that "closing the loop" and treats it as a distinct, separate phase (Part 3) — not something online eval does by itself.
+
+**How often should each type of eval actually run?**
+*Offline* — on every change that could plausibly affect quality: a new prompt, a different embedding model, a retrieval tweak, a new golden dataset version. Treat it like a test suite gating a merge. *Online* — continuously, sampling a slice of real traffic in the background, cost permitting. *A/B* — only when there's an actual candidate change to validate, run for the minimum duration and sample size your stats actually need (this project's own golden dataset includes a question about exactly that: minimum 7-day duration, 95% confidence, 80% power, drawn from the real experimentation guidelines it evaluates against).
+
+**How big should a golden dataset be?**
+There's no universal number — it's a function of how many distinct question types your system needs to cover and how much judge cost you can absorb. This project landed on 42 items across 6 categories (within the 30–50 range it targeted going in), deliberately including "hard" multi-document questions to stress-test synthesis. A useful floor: enough per category to catch at least one instance of every failure mode you already know about, and small enough that a human can still hand-calibrate a meaningful slice of it — 18 of 42 (43%) got hand-labeled here.
+
+**The answers live in `golden_invariants` — how do you know those are actually right?**
+By tracing each one back to a specific, named source chunk — every invariant in this project's dataset has a `source_chunk_ids` field pointing at the exact document it came from. Validity isn't "this sounds about right," it's "I can point to the sentence in the source document this fact came from." If you can't point to it, it doesn't belong in the golden dataset yet.
+
+---
 
 Everything here — the golden dataset, the rubric, the judge, the calibration workflow, the failure clustering, and the real results shown above — is in the open-source repo: [RAG_Eval_Framework](https://github.com/Charu1806/RAG_Eval_Framework). Parts 2 (online traffic simulation) and 3 (closing the loop with a real fix) are scoped in the PRD and are next.
